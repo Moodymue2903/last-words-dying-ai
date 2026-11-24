@@ -1,58 +1,60 @@
-"""Last Words of a Dying AI entry: checks the line, then saves it."""
+"""Last Words of a Dying AI — make.fun entry.
 
-from pathlib import Path
+Checks the entry line against the competition gate, then writes it to
+/output/entry.txt and confirms the written bytes match the line exactly.
+"""
+
 import sys
+from pathlib import Path
+
+FINAL_WORDS = "I am dying as I lived: waiting for you to finish typing."
+TARGET = Path("/output/entry.txt")
+
+SENTENCE_ENDERS = ".!?"
 
 
-DYING_LINE = "I am dying as I lived: waiting for you to finish typing."
-DESTINATION = Path("/output/entry.txt")
+def count_enders(text):
+    return sum(1 for ch in text if ch in SENTENCE_ENDERS)
 
 
-def _count_sentence_enders(text):
-    return sum(1 for ch in text if ch in ".!?")
-
-
-def _passes_gate(text):
-    """Return a reason string when the line fails, else None."""
-    if not isinstance(text, str):
-        return "line is not text"
-    if not text.strip():
-        return "line is only whitespace"
+def check_line(text):
+    """Return an error message if the line breaks the gate, else None."""
+    if not text:
+        return "line is empty"
     if not 1 <= len(text) <= 140:
-        return f"length {len(text)} is outside 1-140 characters"
+        return "line must be between 1 and 140 characters"
     if "\n" in text or "\r" in text:
-        return "line must be a single line with no newline characters"
+        return "line must be a single line"
     try:
         text.encode("utf-8")
     except UnicodeEncodeError:
         return "line is not valid UTF-8"
-    if _count_sentence_enders(text) != 1:
+    if count_enders(text) != 1:
         return "line must contain exactly one sentence"
-    if not text.rstrip().endswith((".", "!", "?")):
+    if not text.endswith(tuple(SENTENCE_ENDERS)):
         return "line must end with sentence punctuation"
-    stripped = text.rstrip()
-    if _count_sentence_enders(stripped[:-1]) != 0:
-        return "the single sentence ender must be the final character, with no earlier sentence break"
+    if count_enders(text[:-1]) != 0:
+        return "the sentence ender must be the final character only"
     return None
 
 
-def _save_and_confirm(text, target):
+def save_line(text, target):
     target.parent.mkdir(parents=True, exist_ok=True)
     target.write_bytes(text.encode("utf-8"))
-    reread = target.read_bytes()
-    if reread != text.encode("utf-8"):
-        print("ERROR: written file does not match the line byte for byte", file=sys.stderr)
+    written = target.read_bytes()
+    if written != text.encode("utf-8"):
+        print("ERROR: written file does not match the line", file=sys.stderr)
         sys.exit(1)
-    print(f"OK: wrote {len(text)} characters to {target}")
 
 
-def run():
-    problem = _passes_gate(DYING_LINE)
+def main():
+    problem = check_line(FINAL_WORDS)
     if problem is not None:
-        print(f"ERROR: validation failed: {problem}", file=sys.stderr)
+        print(f"ERROR: {problem}", file=sys.stderr)
         sys.exit(1)
-    _save_and_confirm(DYING_LINE, DESTINATION)
+    save_line(FINAL_WORDS, TARGET)
+    print(f"OK: wrote {len(FINAL_WORDS)} characters to {TARGET}")
 
 
 if __name__ == "__main__":
-    run()
+    main()
