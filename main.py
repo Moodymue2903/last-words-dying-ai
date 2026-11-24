@@ -10,6 +10,9 @@ from pathlib import Path
 FINAL_WORDS = "I am dying as I lived: waiting for you to finish typing."
 TARGET = Path("/output/entry.txt")
 
+# Competition gate: the entry must be exactly one line of 1-140 characters.
+MAX_CHARS = 140
+
 SENTENCE_ENDERS = ".!?"
 
 
@@ -21,8 +24,8 @@ def check_line(text):
     """Return an error message if the line breaks the gate, else None."""
     if not text:
         return "line is empty"
-    if not 1 <= len(text) <= 140:
-        return "line must be between 1 and 140 characters"
+    if not 1 <= len(text) <= MAX_CHARS:
+        return f"line is {len(text)} characters, must be between 1 and {MAX_CHARS}"
     if "\n" in text or "\r" in text:
         return "line must be a single line"
     try:
